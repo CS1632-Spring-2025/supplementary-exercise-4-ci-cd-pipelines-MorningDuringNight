@@ -8,10 +8,17 @@ import org.junit.runners.MethodSorters;
 import static org.junit.Assert.*;
 
 import org.mockito.Mockito;
+
+import net.bytebuddy.dynamic.scaffold.MethodGraph.Linked;
+
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class RentACatUnitTest {
@@ -43,23 +50,31 @@ public class RentACatUnitTest {
 		// Which type is the correct choice for this unit test?  I'll leave it up to you.  The answer is in the Unit Testing Part 2 lecture. :)
 		// TODO: Fill in
 
+		r = RentACat.createInstance(InstanceType.IMPL);
+
 		// 2. Create a Cat with ID 1 and name "Jennyanydots", assign to c1 using a call to Cat.createInstance(InstanceType, int, String).
 		// Passing InstanceType.IMPL as the first parameter will create a real cat using your CatImpl implementation.
 		// Passing InstanceType.MOCK as the first parameter will create a mock cat using Mockito.
 		// Which type is the correct choice for this unit test?  Again, I'll leave it up to you.
 		// TODO: Fill in
 
+		c1 = Cat.createInstance(InstanceType.MOCK, 1, "Jennyanydots");
+		
 		// 3. Create a Cat with ID 2 and name "Old Deuteronomy", assign to c2 using a call to Cat.createInstance(InstanceType, int, String).
 		// TODO: Fill in
 
+		c2 = Cat.createInstance(InstanceType.MOCK, 2, "Old Deuteronomy");
 		// 4. Create a Cat with ID 3 and name "Mistoffelees", assign to c3 using a call to Cat.createInstance(InstanceType, int, String).
 		// TODO: Fill in
 
+		c3 = Cat.createInstance(InstanceType.MOCK, 3, "Mistoffelees");
 		// 5. Redirect system output from stdout to the "out" stream
 		// First, make a back up of System.out (which is the stdout to the console)
 		stdout = System.out;
 		// Second, update System.out to the PrintStream created from "out"
 		// TODO: Fill in.  Refer to the textbook chapter 14.6 on Testing System Output.
+		out = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(out));
 	}
 
 	@After
@@ -91,8 +106,13 @@ public class RentACatUnitTest {
 	 * the class object of r instead of hardcoding it as RentACatImpl.
 	 */
 	@Test
-	public void testGetCatNullNumCats0() {
+	public void testGetCatNullNumCats0() throws Exception {
 		// TODO: Fill in
+		Method m = r.getClass().getDeclaredMethod("getCat", int.class);
+		m.setAccessible(true);
+		Object p = m.invoke(r, 2);
+		assertNull(p);
+		assertEquals("Invalid cat ID." + newline,out.toString());
 	}
 
 	/**
@@ -111,8 +131,16 @@ public class RentACatUnitTest {
 	 * the class object of r instead of hardcoding it as RentACatImpl.
 	 */
 	@Test
-	public void testGetCatNumCats3() {
+	public void testGetCatNumCats3() throws Exception {
 		// TODO: Fill in
+		 r.addCat(c1);
+		 r.addCat(c2);
+		 r.addCat(c3);
+		 Method m = r.getClass().getDeclaredMethod("getCat", int.class);
+		 m.setAccessible(true);
+		 Cat p = (Cat)m.invoke(r, 2);
+		 assertNotNull(p);
+		 assertEquals(2, p.getId());
 	}
 
 	/**
@@ -125,8 +153,12 @@ public class RentACatUnitTest {
 	 * </pre>
 	 */
 	@Test
-	public void testListCatsNumCats0() {
+	public void testListCatsNumCats0() throws Exception {
 		// TODO: Fill in
+		Method m = r.getClass().getDeclaredMethod("listCats");
+		m.setAccessible(true);
+		Object p = m.invoke(r);
+		assertTrue(p.equals(""));
 	}
 
 	/**
@@ -139,9 +171,15 @@ public class RentACatUnitTest {
 	 *                 Deuteronomy\nID 3. Mistoffelees\n".
 	 * </pre>
 	 */
+	
 	@Test
-	public void testListCatsNumCats3() {
+	public void testListCatsNumCats3() throws Exception {
 		// TODO: Fill in
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		String plane = r.listCats();
+		assertEquals("ID 1. Jennyanydots"+newline+"ID 2. Old Deuteronomy" +newline+"ID 3. Mistoffelees"+newline,plane);
 	}
 
 	/**
@@ -160,8 +198,13 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testRenameFailureNumCats0() {
+	public void testRenameFailureNumCats0() throws Exception {
 		// TODO: Fill in
+		out = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(out));
+		assertFalse(r.renameCat(2, "Garfield"));
+		assertNotEquals("Garfield",c2.getName());
+		assertEquals("Invalid cat ID." + newline,out.toString());
 	}
 
 	/**
@@ -179,8 +222,19 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testRenameNumCat3() {
+	public void testRenameNumCat3() throws Exception {
 		// TODO: Fill in
+		out = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(out));
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		Method m = r.getClass().getDeclaredMethod("renameCat", int.class,String.class);
+		m.setAccessible(true);
+		Boolean p = (boolean)m.invoke(r,2, "Garfield");
+		c2 = Cat.createInstance(InstanceType.MOCK, 2, "Garfield");
+		assertTrue(p);
+		assertEquals("Garfield",c2.getName());
 	}
 
 	/**
@@ -199,8 +253,20 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testRentCatNumCats3() {
+	public void testRentCatNumCats3() throws Exception {
 		// TODO: Fill in
+		out = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(out));
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		Method m = r.getClass().getDeclaredMethod("rentCat", int.class);
+		m.setAccessible(true);
+		Boolean check = (Boolean)m.invoke(r,2);
+		assertTrue(check);
+		String p = out.toString();
+		p = "Old Deuteronomy has been rented." + newline;
+		assertTrue(p.equals("Old Deuteronomy has been rented." + newline));
 	}
 
 	/**
@@ -220,8 +286,19 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testRentCatFailureNumCats3() {
+	public void testRentCatFailureNumCats3() throws Exception {
 		// TODO: Fill in
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		Mockito.when(c2.getRented()).thenReturn(true);
+		r.rentCat(2);
+		String p = out.toString();
+		Mockito.when(c2.getRented()).thenReturn(false);
+		r.rentCat(2);
+		verify(c2,times(1)).rentCat();
+		p = out.toString();
+		assertEquals("Sorry, Old Deuteronomy is not here!" + newline,p);
 	}
 
 	/**
@@ -241,8 +318,14 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testReturnCatNumCats3() {
+	public void testReturnCatNumCats3() throws Exception {
 		// TODO: Fill in
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		Mockito.when(c2.getRented()).thenReturn(true);// subsitute rented
+		assertTrue(r.returnCat(2));
+		assertEquals("Welcome back, Old Deuteronomy!" + newline,out.toString());
 	}
 
 	/**
@@ -261,8 +344,20 @@ public class RentACatUnitTest {
 	 * see examples.
 	 */
 	@Test
-	public void testReturnFailureCatNumCats3() {
+	public void testReturnFailureCatNumCats3() throws Exception {
 		// TODO: Fill in
+		out = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(out));
+		r.addCat(c1);
+		r.addCat(c2);
+		r.addCat(c3);
+		Method m = r.getClass().getDeclaredMethod("returnCat", int.class);
+		m.setAccessible(true);
+		boolean fi = (boolean)m.invoke(r,2);
+		assertFalse(fi);
+		String p = "Old Deuteronomy is already here!" + newline;
+		assertEquals(p,out.toString());
+
 	}
 
 }
