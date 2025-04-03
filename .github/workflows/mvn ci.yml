@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-    contents: write
+      contents: write
 
     steps:
     # This invokes the Setup Java JDK GitHub action:
