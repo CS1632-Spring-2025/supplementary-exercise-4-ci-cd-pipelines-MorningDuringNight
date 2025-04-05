@@ -9,6 +9,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
+version: 2
+updates:
+  - package-ecosystem: "maven" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
 jobs:
   
   # Runs the Maven test phase on the project
